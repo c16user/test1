@@ -7,6 +7,7 @@
 #include<fstream>
 #include<string>
 #include<boost/regex.hpp>
+#include <regex>
 
 using std::vector;
 using std::map;
@@ -18,14 +19,16 @@ using std::endl;
 using std::ifstream;
 using std::ofstream;
 using std::getline;
-using namespace boost;
-
+using boost::regex_replace;
+using boost::regex_match;
+using boost::regex_search;
+using boost::regex;
 
 template< typename T >
 class SingleBasisSet{
 private:
 	map< vector< string> , vector < vector < vector < pair < T, T> > > > > content;
-//	непонятно, надо имя или нет tring 
+//	непонятно, надо имя или нет tring//значение пары: внешний вектор-его индексация-номер орб кв числа, промежуточный вектор-оболочка(одна), внутренний вектор-вектор пар-показатель экспоненты-коэффициент при экспоненте.  
 public:
 //	TODO операции с несколькими классами, объединение
 	SingleBasisSet();
@@ -36,6 +39,29 @@ public:
 	bool exportBasisSetMolproFormat( const char * fileName) const;
 	bool exportBasisSetGamessFormat( const char * fileName) const;
 };
+
+
+regex shell("^[A-Z]\\s{1,3}\\d{1,2}");//оболочка
+bool shellsearch (string str){
+	if (regex_search(str,shell)) return true;
+}
+
+regex S("^S\\s{3}\\d{1,2}");
+regex P("^P\\s{3}\\d{1,2}");
+regex D("^D\\s{3}\\d{1,2}");
+regex F("^F\\s{3}\\d{1,2}");
+regex G("^G\\s{3}\\d{1,2}");
+regex L("^L\\s{3}\\d{1,2}");
+int orbital (string str){
+	if(regex_search(str,S)) return 0;
+	if(regex_search(str,P)) return 1;
+	if(regex_search(str,D)) return 2;
+	if(regex_search(str,F)) return 3;
+	if(regex_search(str,G)) return 4;
+	if(regex_search(str,L)) return 5;
+}
+
+
 
 template< typename T >
 SingleBasisSet<T>::SingleBasisSet(){
@@ -79,12 +105,20 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 	bool isBeginGood = false;
 	bool isBadLine = false;
 	int noLine = 0;
-	regex empty("^\\s*$");
-	regex emptyOrComment("^\\s*(!.*)*$");
-	regex firstLine("^\\s*\\$DATA\\s*$");
+	int *index = new int;
+	int i = 0;
+	vector<pair<double,double> > CiAi;
+	regex empty("^\\s*$");//пустая строка
+	regex emptyOrComment("^\\s*(!.*)*$");//пустая строка или коммент. (все ли правильно в этом рв?)
+	regex firstLine("^\\s*\\$DATA\\s*$");//$DATA
+	regex del("[A-Z]{4,}\\s*$");//название элемента. здесь вопрос-в рег выражении оказывается что друг за другом следуют подряд 4 или больше букв, в названии любого элемента это действительно присутствует, но это рег. выражение не контролирует случай, если последовательность букв не отвечает названию какого-либо элемента. 
+	regex shell("^[A-Z]\\s{1,3}\\d{1,2}");//оболочка
+	regex number("^\\s*(\\d+)((\\s*\\d+[\\.]?\\d+[EeDd]?[+-]?\\d+)*)(.*)");
+	regex numer("\\d+[\\.]?\\d+[EeDd]?[+-]?\\d+");
+	regex trash1("^[A-Z]{4,}\\d+.*");
+	regex trash2("^[A-Z]{4,}\\s*\\w*.*$");
+	regex end("^\\$END");
 //	Проверка шапки файла
-//
-//	
 	while( getline(inp,str) ){
 		noLine++;
 		if(regex_search(str,emptyOrComment)) continue;  
@@ -111,18 +145,56 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 
 
 //	Заполнение элементов
-	while( getline(inp,str) ){
+	boost::smatch ourRes;
+	double Ci, Ai;
+	bool badIdentificator=false;
+	while(getline(inp,str)) {
+		noLine++;
+		if(regex_search(str,del)){
+			if(regex_search(str,trash1)||regex_search(str,trash2)) {
+				badIdentificator=true;//или нет? может быть, что после названия элемента будет идти его порядковый
+				break;			//номер
+				}
+			 elementLabel.push_back(str);//записываются полные названия элементов большими буквами. мб надо добавить еще
+			 continue;			     //нечто идентифицирующее элемент
+			 
+									}
+		if(shellsearch(str)) {
+			index[i]=orbital(str);
+			i++;//как-то это криво
+			continue;
+			}
+		if(regex_search(str,ourRes,number)){
+					string str2(ourRes[2]);
+					boost::sregex_iterator xIt(str2.begin(), str2.end(), numer);
+                                        boost::sregex_iterator xInvalidIt;
+						cout << *xIt << endl;
+						xIt++;//какая то фигня с итераторами
+						cout << *xIt << endl;
+					
+					
+					 
+			}
 	}
+	if(badIdentificator)
+	cout << "В строке " << noLine << " \""<<str<<"\"\n" << "ошибка, не существует химического элемента с таким названием, чтениефайла не будет продолжено" << endl;  
 
 //	Проверка корректного завершения файла
+	int end=0;
 	while( getline(inp,str) ){
+		if(regex_search(str,end)) break;
+		end++;//строго, даже строки с символами-разделятелями нельзя
+		
 	}
-
+	if(end){
+	cout << "После базисного набора и идентификатора $END окончания файла присутствуют непустые строки. "
+	cout << "Если Вам кажется, что строки ниже пустые, проверьте, нет ли в строках, идущих ниже строки \"$END\" символов-разделителей. "
+	}
 
 
 
 	inp.close();
-
+	delete [] index;
 //	Формат файла
 //	{пустая строчка или строчка из комментариев}
 //	{начальная строчка}
