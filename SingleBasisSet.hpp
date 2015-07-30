@@ -7,7 +7,7 @@
 #include<fstream>
 #include<string>
 #include<boost/regex.hpp>
-#include <regex>
+//#include <regex>
 
 using std::vector;
 using std::map;
@@ -28,6 +28,7 @@ template< typename T >
 class SingleBasisSet{
 private:
 	map< vector< string> , vector < vector < vector < pair < T, T> > > > > content;
+	bool getLandNoPrimitives(string str, int & L, int & N) const;
 //	непонятно, надо имя или нет tring//значение пары: внешний вектор-его индексация-номер орб кв числа, промежуточный вектор-оболочка(одна), внутренний вектор-вектор пар-показатель экспоненты-коэффициент при экспоненте.  
 public:
 //	TODO операции с несколькими классами, объединение
@@ -45,6 +46,38 @@ regex shell("^[A-Z]\\s{1,3}\\d{1,2}");//оболочка
 bool shellsearch (string str){
 	if (regex_search(str,shell)) return true;
 }
+template< typename T >
+bool SingleBasisSet<T>::getLandNoPrimitives(string str, int & L, int & N) const{
+	regex shell("^\\s*([a-zA-Z])\\s+(\\d+)$");
+	boost::smatch result;
+/*	
+	Идея следующая.
+	1. Проверить, что строка отвечает регулярному выражению вида ^\s*([a-zA-Z])\s+(\d+)$', если все плохо - вернуть false
+	2. Проверить, что результат один - это s или S (хоть прямым if'ом) - что распознается, иначе вернуть false
+	3. для S - L=0, P - L=1, D L=2, ..... L = -1;
+	4. Результат два просто передать в N через atoi. Если N=0 - выразить пользователю недоумение.
+	5. вернуть true;
+*/
+	if(!regex_search(str,result,shell)) return false;
+	int lTmp=-2;
+	if (((result[1].str()).c_str())=="s" || ((result[1].str()).c_str())=="S" ) lTmp=0;
+	if (((result[1].str()).c_str())=="p" || ((result[1].str()).c_str())=="P" ) lTmp=1;
+	if (((result[1].str()).c_str())=="d" || ((result[1].str()).c_str())=="D" ) lTmp=2;
+	if (((result[1].str()).c_str())=="f" || ((result[1].str()).c_str())=="F" ) lTmp=3;
+	if (((result[1].str()).c_str())=="g" || ((result[1].str()).c_str())=="G" ) lTmp=4;
+	if (((result[1].str()).c_str())=="h" || ((result[1].str()).c_str())=="H" ) lTmp=5;
+	if (((result[1].str()).c_str())=="i" || ((result[1].str()).c_str())=="I" ) lTmp=6;
+	if (((result[1].str()).c_str())=="k" || ((result[1].str()).c_str())=="K" ) lTmp=7;
+	if (((result[1].str()).c_str())=="l") lTmp=8;
+	if (((result[1].str()).c_str())=="L") lTmp=-1;
+	
+	if (lTmp==-2) return false;
+	if (N==0) return false;
+	N=atoi((result[2].str()).c_str());
+	L=lTmp;
+	return true;
+}
+
 
 regex S("^S\\s{3}\\d{1,2}");
 regex P("^P\\s{3}\\d{1,2}");
@@ -60,7 +93,6 @@ int orbital (string str){
 	if(regex_search(str,G)) return 4;
 	if(regex_search(str,L)) return 5;
 }
-
 
 
 template< typename T >
@@ -142,6 +174,17 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 		cout << "В файле " << fileName << " нет данных! " << endl;
 		return false;
 	}
+/* Пример разбора строки
+	getline(inp,str);
+
+	const boost::sregex_iterator itEmpty;
+	boost::sregex_iterator it(str.begin(),str.end(),regex("\\s*[^\\s]+"));
+	elementLabel.clear();
+	while (it != itEmpty ) elementLabel.push_back((*it++).str());
+	content[elementLabel]=elementContent;
+	return true;
+*/
+
 
 
 //	Заполнение элементов
@@ -157,7 +200,8 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 				}
 			 elementLabel.push_back(str);//записываются полные названия элементов большими буквами. мб надо добавить еще
 			 continue;			     //нечто идентифицирующее элемент
-			 
+//	 new branch 'dima'
+ 
 									}
 		if(shellsearch(str)) {
 			index[i]=orbital(str);
@@ -180,15 +224,15 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 	cout << "В строке " << noLine << " \""<<str<<"\"\n" << "ошибка, не существует химического элемента с таким названием, чтениефайла не будет продолжено" << endl;  
 
 //	Проверка корректного завершения файла
-	int end=0;
+	int endT=0;
 	while( getline(inp,str) ){
 		if(regex_search(str,end)) break;
-		end++;//строго, даже строки с символами-разделятелями нельзя
+		endT++;//строго, даже строки с символами-разделятелями нельзя
 		
 	}
-	if(end){
-	cout << "После базисного набора и идентификатора $END окончания файла присутствуют непустые строки. "
-	cout << "Если Вам кажется, что строки ниже пустые, проверьте, нет ли в строках, идущих ниже строки \"$END\" символов-разделителей. "
+	if(endT){
+	cout << "После базисного набора и идентификатора $END окончания файла присутствуют непустые строки. ";
+	cout << "Если Вам кажется, что строки ниже пустые, проверьте, нет ли в строках, идущих ниже строки \"$END\" символов-разделителей. ";
 	}
 
 
