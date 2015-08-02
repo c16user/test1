@@ -12,7 +12,6 @@
 ! program
 ! 
 
-
 ! Elements                             References
 ! --------                             ----------
 ! H,Li - Ne: P.C. Hariharan and J.A. Pople, Theoret. Chimica Acta 28, 213 (1973).
@@ -25,11 +24,11 @@
 
 
 $DATA
-HYDROGEN fasd  dfas   3232  dafs
+HYDROGEN aromatic 157237 trxeiciccu
 S   3
-  1     18.7311370              0.03349460       
+  1     18.7311370              0.03349460    
   2      2.8253937              0.23472695       
-  3      0.6401217              0.81375733       
+  3      0.6401217              0.81375733   
 S   1
   1      0.1612778              1.0000000        
 P   1
