@@ -60,20 +60,19 @@ bool SingleBasisSet<T>::getLandNoPrimitives(string str, int & L, int & N) const{
 */
 	if(!regex_search(str,result,shell)) return false;
 	int lTmp=-2;
-	if (((result[1].str()).c_str())=="s" || ((result[1].str()).c_str())=="S" ) lTmp=0;
-	if (((result[1].str()).c_str())=="p" || ((result[1].str()).c_str())=="P" ) lTmp=1;
-	if (((result[1].str()).c_str())=="d" || ((result[1].str()).c_str())=="D" ) lTmp=2;
-	if (((result[1].str()).c_str())=="f" || ((result[1].str()).c_str())=="F" ) lTmp=3;
-	if (((result[1].str()).c_str())=="g" || ((result[1].str()).c_str())=="G" ) lTmp=4;
-	if (((result[1].str()).c_str())=="h" || ((result[1].str()).c_str())=="H" ) lTmp=5;
-	if (((result[1].str()).c_str())=="i" || ((result[1].str()).c_str())=="I" ) lTmp=6;
-	if (((result[1].str()).c_str())=="k" || ((result[1].str()).c_str())=="K" ) lTmp=7;
-	if (((result[1].str()).c_str())=="l") lTmp=8;
-	if (((result[1].str()).c_str())=="L") lTmp=-1;
-	
+	if ((result[1].str())=="s" || (result[1].str())=="S" ) lTmp=0;
+	if ((result[1].str())=="p" || (result[1].str())=="P" ) lTmp=1;
+	if ((result[1].str())=="d" || (result[1].str())=="D" ) lTmp=2;
+	if ((result[1].str())=="f" || (result[1].str())=="F" ) lTmp=3;
+	if ((result[1].str())=="g" || (result[1].str())=="G" ) lTmp=4;
+	if ((result[1].str())=="h" || (result[1].str())=="H" ) lTmp=5;
+	if ((result[1].str())=="i" || (result[1].str())=="I" ) lTmp=6;
+	if ((result[1].str())=="k" || (result[1].str())=="K" ) lTmp=7;
+	if ((result[1].str())=="l") lTmp=8;
+	if ((result[1].str())=="L") lTmp=-1;
 	if (lTmp==-2) return false;
-	if (N==0) return false;
 	N=atoi((result[2].str()).c_str());
+	if (N==0) return false;
 	L=lTmp;
 	return true;
 }
@@ -105,7 +104,7 @@ SingleBasisSet<T>::~SingleBasisSet(){}
 
 template< typename T >
 void SingleBasisSet<T>::printBasisSet() const{
-	cout<<"Число элементов в базисном наборе: " << content.size() <<'\n';
+	cout<<"Число элементов в базисном наборе =0" <<'\n';
 	
 }
 
@@ -125,6 +124,10 @@ bool SingleBasisSet<T>::importBasisSetMolproFormat( const char * fileName){
 
 template< typename T >
 bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
+
+	cout.precision(12);
+	cout.setf(std::ios::fixed,std::ios::floatfield);
+
 	if ( !content.empty() ) {
 		cerr << "Базисный набор уже задан, ошибка!\n";
 		return false;
@@ -144,7 +147,7 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 	regex emptyOrComment("^\\s*(!.*)*$");//пустая строка или коммент. (все ли правильно в этом рв?)
 	regex firstLine("^\\s*\\$DATA\\s*$");//$DATA
 	regex del("[A-Z]{4,}\\s*$");//название элемента. здесь вопрос-в рег выражении оказывается что друг за другом следуют подряд 4 или больше букв, в названии любого элемента это действительно присутствует, но это рег. выражение не контролирует случай, если последовательность букв не отвечает названию какого-либо элемента. 
-	regex shell("^[A-Z]\\s{1,3}\\d{1,2}");//оболочка
+	regex shell("^\\s*([a-zA-Z])\\s+(\\d+)$");//оболочка
 	regex number("^\\s*(\\d+)((\\s*\\d+[\\.]?\\d+[EeDd]?[+-]?\\d+)*)(.*)");
 	regex numer("\\d+[\\.]?\\d+[EeDd]?[+-]?\\d+");
 	regex trash1("^[A-Z]{4,}\\d+.*");
@@ -188,39 +191,78 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 
 
 //	Заполнение элементов
-	boost::smatch ourRes;
-	double Ci, Ai;
-	bool badIdentificator=false;
+	regex pars("\\s*[^\\s]+");
+	regex el("^[A-Z]{4,}.*$");
+	regex partComment("^.*!.*$");
+	regex trash("!.*$");
+	regex clear("");
+	//regex start("^\\s+\\d{1,2}.*");	
+	regex NoLShell("^\\s+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+$");//не L-оболочка
+	regex LShell("^\\s+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+$");
+	boost::smatch result;
+	boost::smatch CiAiNoL;
+	boost::smatch CiAiL;
+	int L=-3;
+	int N;
+	double Ci, Ai, mix;
 	while(getline(inp,str)) {
 		noLine++;
-		if(regex_search(str,del)){
-			if(regex_search(str,trash1)||regex_search(str,trash2)) {
-				badIdentificator=true;//или нет? может быть, что после названия элемента будет идти его порядковый
-				break;			//номер
-				}
-			 elementLabel.push_back(str);//записываются полные названия элементов большими буквами. мб надо добавить еще
-			 continue;			     //нечто идентифицирующее элемент
-//	 new branch 'dima'
- 
-									}
-		if(shellsearch(str)) {
-			index[i]=orbital(str);
-			i++;//как-то это криво
+		if (regex_search(str, empty) || regex_search(str,emptyOrComment)) continue;
+		if (regex_search(str,partComment)){
+			str=regex_replace(str,trash,clear);//отброс комментариев в строке
+			//cout << str << endl;
+		}
+		if(regex_search(str,el)){
+			boost::sregex_iterator it(str.begin(),str.end(),pars);
+			boost::sregex_iterator itbad;//этот if-блок-парсинг строки с названием элемента.
+			while (it != itbad){
+			elementLabel.push_back((*it++).str());
+			}
+			//copy(elementLabel.begin(),elementLabel.end(),std::ostream_iterator<string>(cout,"<--"));
+			//elementLabel.clear();		
+			cout << endl;
 			continue;
+		}
+		if (regex_search(str,result,shell)){
+			N = atoi((result[2].str()).c_str());
+			if(getLandNoPrimitives(str,L,N)){
+				//cout << L << " and " << N << endl;
+				continue;
 			}
-		if(regex_search(str,ourRes,number)){
-					string str2(ourRes[2]);
-					boost::sregex_iterator xIt(str2.begin(), str2.end(), numer);
-                                        boost::sregex_iterator xInvalidIt;
-						cout << *xIt << endl;
-						xIt++;//какая то фигня с итераторами
-						cout << *xIt << endl;
-					
-					
-					 
+			if(!getLandNoPrimitives(str,L,N)){
+				cout << "!!!!!!!!!!";
+				break;
 			}
+			/*else {
+				//cout << "В строке " << noLine << "\""<<str<<"\"" << " ошибка!" << endl;
+				continue;//не получается зайти в else-блок
+			}*/
+		}
+		if (regex_search(str,CiAiNoL,NoLShell) && (L != -1)){
+				for (int i=0; i<N; i++){
+					Ci=atof((CiAiNoL[1].str()).c_str());
+					Ai=atof((CiAiNoL[2].str()).c_str());
+					cout << Ci << " " << Ai << endl;
+					if (i != N-1)
+					getline(inp,str);
+				}
+				cout << endl;
+		}
+		if(regex_search(str,CiAiL,LShell) && L == -1){
+			for(int i=0; i<N; i++){
+				Ci=atof((CiAiL[1].str()).c_str());
+				Ai=atof((CiAiL[2].str()).c_str());
+				mix=atof((CiAiL[3].str()).c_str());
+				cout << Ci << " " << Ai << " " << mix << endl;
+				if (i != N-1)
+				getline(inp,str);
+			}
+			cout << endl;
+		}
+			
+
 	}
-	if(badIdentificator)
+	if(false)
 	cout << "В строке " << noLine << " \""<<str<<"\"\n" << "ошибка, не существует химического элемента с таким названием, чтениефайла не будет продолжено" << endl;  
 
 //	Проверка корректного завершения файла
@@ -230,7 +272,7 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 		endT++;//строго, даже строки с символами-разделятелями нельзя
 		
 	}
-	if(endT){
+	if(endT!=0){
 	cout << "После базисного набора и идентификатора $END окончания файла присутствуют непустые строки. ";
 	cout << "Если Вам кажется, что строки ниже пустые, проверьте, нет ли в строках, идущих ниже строки \"$END\" символов-разделителей. ";
 	}
