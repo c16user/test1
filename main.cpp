@@ -3,7 +3,7 @@
 int main(int argc, char** argv){
 
 	SingleBasisSet<double> A;
-	A.importBasisSetGamessFormat(argv[1]);
+	A.importBasisSetGamessFormat("HCuNbad.basis");
 	A.printBasisSet();
 	A.exportBasisSetMolproFormat("3.basis");
 
