@@ -7,11 +7,12 @@
 #include<fstream>
 #include<string>
 #include<boost/regex.hpp>
-//#include <regex>
+#include <utility>
 
 using std::vector;
 using std::map;
 using std::pair;
+using std::make_pair;
 using std::string;
 using std::cerr;
 using std::cout;
@@ -44,14 +45,6 @@ template< typename T >
 bool SingleBasisSet<T>::getLandNoPrimitives(string str, int & L, int & N) const{
 	regex shell("^\\s*([a-zA-Z])\\s+(\\d+)$");
 	boost::smatch result;
-/*	
-	Идея следующая.
-	1. Проверить, что строка отвечает регулярному выражению вида ^\s*([a-zA-Z])\s+(\d+)$', если все плохо - вернуть false
-	2. Проверить, что результат один - это s или S (хоть прямым if'ом) - что распознается, иначе вернуть false
-	3. для S - L=0, P - L=1, D L=2, ..... L = -1;
-	4. Результат два просто передать в N через atoi. Если N=0 - выразить пользователю недоумение.
-	5. вернуть true;
-*/
 	if(!regex_search(str,result,shell)) return false;
 	int lTmp=-2;
 	if ((result[1].str())=="s" || (result[1].str())=="S" ) lTmp=0;
@@ -119,21 +112,22 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 	bool isBeginGood = false;
 	bool isBadLine = false;
 	int noLine = 0;
-	vector<pair<double,double> > CiAi;
-	regex empty("");//пустая строка
+	pair<double,double> AiCi;
+	vector<pair<double,double> > primitive;
+	vector<vector<pair<double,double> > > shellvector;
 	regex emptyOrComment("^\\s*(!.*)*$");//пустая строка или коммент. (все ли правильно в этом рв?)
 	regex firstLine("^\\s*\\$DATA\\s*(!.*)*$");//$DATA
-	regex del("^\\s*[A-Z]{4,}\\s*$");//название элемента. здесь вопрос-в рег выражении оказывается что друг за другом следуют подряд 4 или больше букв, в названии любого элемента это действительно присутствует, но это рег. выражение не контролирует случай, если последовательность букв не отвечает названию какого-либо элемента. 
 	regex shell("^\\s*([a-zA-Z])\\s+(\\d+)$");//оболочка
-	regex badShellComm("^\\s*!+([a-zA-Z])\\s+(\\d+)$");//оболочка
-	regex number("^\\s*(\\d+)((\\s*\\d+[\\.]?\\d+[EeDd]?[+-]?\\d+)*)(.*)");
-	regex numer("\\d+[\\.]?\\d+[EeDd]?[+-]?\\d+");
-	regex trash1("^[A-Z]{4,}\\d+.*");
-	regex trash2("^[A-Z]{4,}\\s*\\w*.*$");
 	regex end("^\\$END");
-	regex comm("^\\s*!.*$");
-	regex znak("!");
 	regex emptyString("^\\s*$");
+	regex pars("\\s*[^\\s]+");
+	regex el("^\\s*[a-zA-Z]{4,}.*$");
+	regex trash("!.*$");
+	regex commentOnly("^!.*$");
+	string clear("");
+	regex NoLShell("^\\s+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*$");//не L-оболочка
+	regex LShell("^\\s+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*$");
+	regex EndOfFile("^\\s*\\$END\\s*(!.*)*$");
 
 //	Начало проверки шапки файла
 	while( getline(inp,str) ){
@@ -156,42 +150,12 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 	}
 //	Конец проверки шапки файла
 //	Заполнение элементов
-	regex pars("\\s*[^\\s]+");
-	regex el("^\\s*[a-zA-Z]{4,}.*$");
-	regex elWBC("^\\s*!+[a-zA-Z]{4,}.*$");
-	regex partComment("^.*!.*$");
-	regex trash("!.*$");
-	regex commentOnly("^!.*$");
-	string clear("");
-	regex startsymbols("^\\s*\\d+\\s*.*");
-	//regex start("^\\s+\\d{1,2}.*");	
-	regex NoLShell("^\\s+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*$");//не L-оболочка
-	regex LShell("^\\s+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*$");
-	regex NoLShellWGC("^\\s+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*!.*$");//не L-оболочка
-	regex LShellWGC("^\\s+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*!.*$");
-	regex NoLShellFind("\\s*\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*$");//не L-оболочка
-	regex LShellFind("\\s*\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*$");
-	regex EndOfFile("^\\s*\\$END\\s*(!.*)*$");
-	regex NoLShellWBC("^\\s+!+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*$");//не L-оболочка
-	regex LShellWBC("^\\s+!+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*$");
 	boost::smatch result;
 	boost::smatch CiAiNoL;
 	boost::smatch CiAiL;
-	vector<string> stringsBad;
-	vector<int> numBadStr;
 	int L=-3;
 	int N;
-	int badString;
 	double Ci, Ai, mix;
-	bool endFind=false;
-	bool errorInNoLShell=false;
-	bool errorInLShell=false;
-	bool badNoLPrimitive=false;
-	bool badLPrimitive=false;
-	bool isElementInInteriorCycle=false;
-	vector<int> warning;
-	bool attention;
-
 	enum ExitCode { none, badShell, lastLine, badElement, sameElement, endOfShells, badPrimitives } ;
 	ExitCode exitCode;
 
@@ -242,16 +206,18 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 						}
 						str=regex_replace(str,trash,clear); // отброс комментариев в строке  // FIXME может быть сделать strGood или strNotModified
 						if ((L==-1)&&(regex_match(str,CiAiL,LShell))){
-							Ci=atof((CiAiL[1].str()).c_str());
-							Ai=atof((CiAiL[2].str()).c_str());
+							Ai=atof((CiAiL[1].str()).c_str());
+							Ci=atof((CiAiL[2].str()).c_str());
 							mix=atof((CiAiL[3].str()).c_str());
-							cout << Ci << " " << Ai << " " << mix << endl;
+							cout << Ai << " " << Ci << " " << mix << endl;
 							continue;
 						}
 						if ((L>-1)&&(regex_match(str,CiAiNoL,NoLShell))){
-							Ci=atof((CiAiNoL[1].str()).c_str());
-        						Ai=atof((CiAiNoL[2].str()).c_str());
-							cout << Ci << " " << Ai << endl;
+							Ai=atof((CiAiNoL[1].str()).c_str());
+        						Ci=atof((CiAiNoL[2].str()).c_str());
+							cout << Ai << " " << Ci << endl;
+							AiCi=make_pair(Ai,Ci);//создаются пары показатель-коэфф
+							primitive.push_back(AiCi);//пары закладываются в первый вектор
 							continue;
 						}
 						exitCode = badPrimitives;
@@ -287,24 +253,6 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 	break;
 
 	}
-/*
-	
-	if(errorInNoLShell){
-		cout << "В строке " << noLine << " \"" << str << "\"\n" "ошибка! (Не L-оболочка), чтение файла не будет продолжено " <<endl;
-		return false;
-	}
-	if(errorInLShell){
-		cout << "В строке " << noLine << " \"" << str << "\"\n" "ошибка! (L-оболочка), чтение файла не будет продолжено " <<endl;
-		return false;
-	}
-	if (badNoLPrimitive){
-		cout << "В строке " << noLine << " \"" << str << "\"\n" "ошибка (примитив из не L-оболочки, проверьте также нет ли в строках, содержащих предыдущую оболочку и примитивы в ней ошибок или восклицательных знаков в неправильных местах, которые расцениваются как комментарий)" << endl;
-		return false;
-	}
-	if (badLPrimitive){
-		cout << "В строке " << noLine << " \"" << str << "\"\n" "ошибка (примитив из L-оболочки, проверьте также нет ли в строках, содержащих предыдущую оболочку и примитивы в ней ошибок или восклицательных знаков в неправильных местах, которые расцениваются как комментарий)" << endl;
-		return false;
-	}
 
 
 //	Проверка корректного завершения файла
@@ -319,7 +267,7 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 	cout << "Если Вам кажется, что строки ниже пустые, проверьте, нет ли в строках, идущих ниже строки \"$END\" символов-разделителей. ";
 	}
 
-*/
+
 
 	inp.close();
 //	elementLabel.push_back("CARBON");
