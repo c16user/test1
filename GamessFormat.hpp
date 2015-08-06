@@ -1,10 +1,11 @@
-#ifndef GAMESSFORMAT_HPP
+#ifndef GAMESSFORiMAT_HPP
 #define GAMESSFORMAT_HPP
 
 #include<iostream>
 #include<string>
 #include<boost/regex.hpp>
 #include<map>
+#include <cstdlib>
 #include<vector>
 
 using std::cout;
@@ -28,13 +29,13 @@ public:
 	GamessFormat(const char * streamName_);
 	bool readHead(istream & inp);
 	void readEnd(istream & inp);
-	bool getElementName(istream & inp,vector<string> elementLabel, int & exitCode, int & noLine_, string str);
-	bool getElementContent(istream & inp, vector < vector < vector < pair < T, T> > > > elementContent,
-	                int & exitCode, int & noLine_, string str);
+	bool getElementName(istream & inp,vector<string> & elementLabel, int & exitCode, int & noLine_, string & str);
+	bool getElementContent(istream & inp, vector < vector < vector < pair < T, T> > > > & elementContent,
+	                int & exitCode, int & noLine_, string & str);
 private:
 	int noLine;
 	const char * streamName;
-	regex firstLine, lastLine, emptyOrComment, emptyString, commentOnly, NoLShell, LShell,shell;
+	regex firstLine, lastLine, emptyOrComment, emptyString, commentOnly, NoLShell, LShell,shell, pars, el;
 	bool getLandNoPrimitives(string str, int & L, int & N) const;
 };
 
@@ -45,11 +46,13 @@ GamessFormat<T>::GamessFormat(const char * streamName_){
 	firstLine=regex("^\\s*\\$DATA\\s*(!.*)*$");//$DATA		// FIXME Таки добиться нормального объявления
 	lastLine=regex("^\\s*\\$END\\s*(!.*)*$"); // $END
 	emptyOrComment=regex("^\\s*(!.*)*$");//пустая строка или коммент.
-	shell=regex("^\\s*([a-zA-Z])\\s+(\\d+)$");//оболочка
+	shell=regex("^\\s*([a-zA-Z])\\s+(\\d+)\\s*$");//оболочка
 	emptyString=regex("^\\s*$");
+	el=regex("^\\s*[a-zA-Z]{4,}.*$");
+	pars=regex("\\s*[^\\s]+");
 	commentOnly=regex("^\\s*!.*$");
-	NoLShell=regex("^\\s+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*(!.*)*$");//не L-оболочка
-	LShell=regex("^\\s+\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*(!.*)*$");
+	NoLShell=regex("^\\s*\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*(!.*)*$");//не L-оболочка
+	LShell=regex("^\\s*\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*(!.*)*$");
 }
 	
 template< typename T >
@@ -104,10 +107,10 @@ bool GamessFormat<T>::getLandNoPrimitives(string str, int & L, int & N) const{
 
 
 template< typename T >
-bool  GamessFormat<T>::getElementContent(istream & inp, vector < vector < vector < pair < T, T> > > > elementContent,
-	                int & exitCode, int & noLine_, string str){
-	double L,Ai,Ci,CLi;
-	int N;
+bool  GamessFormat<T>::getElementContent(istream & inp, vector < vector < vector < pair < T, T> > > > & elementContent,
+	                int & exitCode, int & noLine_, string & str){
+	double Ai,Ci,CLi;
+	int N, L;
 	boost::smatch result;
 	boost::smatch CiAiNoL;
 	boost::smatch CiAiL;
@@ -118,10 +121,14 @@ bool  GamessFormat<T>::getElementContent(istream & inp, vector < vector < vector
 	vector < pair < T, T > > basisFunc2;  // для L оболочки
 	while (getline(inp,str) ) {
 		noLine++;
-		if(regex_match(str,emptyString)) return true;
+		if(regex_match(str,emptyString)){
+			elementContent.resize(Lmax+1);
+			return true;
+		}
 		if(regex_match(str,commentOnly)) continue; 
 		if(regex_match(str,lastLine)){
 			exitCode = 5; 	// FIXME Magic constant - это очень плохо!
+			elementContent.resize(Lmax+1);
 			return true;
 		}
 		if (!regex_match(str,result,shell)){
@@ -133,7 +140,7 @@ bool  GamessFormat<T>::getElementContent(istream & inp, vector < vector < vector
 			return false;
 		}
 		// вот тут мы можем находиться после того, как считалась оболочка
-		if (Lmax<fabs(L)) Lmax=fabs(L);
+		if (Lmax<abs(L)) Lmax=abs(L);
 		basisFunc1.clear();
 		basisFunc2.clear();
 		for (int i=0; i<N; i++){
@@ -150,9 +157,9 @@ bool  GamessFormat<T>::getElementContent(istream & inp, vector < vector < vector
 				Ai=atof((CiAiL[1].str()).c_str());
 				Ci=atof((CiAiL[2].str()).c_str());
 				CLi=atof((CiAiL[3].str()).c_str());
-				cout << Ai << " " << Ci << " " << mix << endl;
+				cout << Ai << " " << Ci << " " << CLi << endl;
 				basisFunc1.push_back(make_pair(Ai,Ci));
-				basisFunc2.push_back(make_pair(Ai,mix));
+				basisFunc2.push_back(make_pair(Ai,CLi));
 				continue;
 			}
 			if ((L>-1)&&(regex_match(str,CiAiNoL,NoLShell))){
@@ -162,16 +169,24 @@ bool  GamessFormat<T>::getElementContent(istream & inp, vector < vector < vector
 				basisFunc1.push_back(make_pair(Ai,Ci));
 				continue;
 			}
-			exitCode = badPrimitives;
+			cerr << "Ошибка!!! Строка " << noLine << " : \"" << str << "\"\n не может описывать примитив!"<<
+			" Чтение из "<< streamName<<" не будет продолжено! " << endl;
 			return false;
 		}
+		if(L == -1){
+			elementContent[0].push_back(basisFunc1);
+			elementContent[1].push_back(basisFunc2);
+		} else {
+			elementContent[L].push_back(basisFunc1);
+		}
 	}
-	// Ну и тут всякие заполнения
-	return true;
+	cerr << "Ошибка - неожиданный конец ввода "<< streamName <<". Не обнаружено ключевое слово $END\n";
+	return false;
 }
 
 template< typename T >
-bool  GamessFormat<T>::getElement(istream & inp, vector<string> elementLabel, int & exitCode, int & noLine_, string str){
+bool  GamessFormat<T>::getElementName(istream & inp, vector<string> & elementLabel, int & exitCode, int & noLine_, string & str){
+	
 	while( getline(inp,str) ){
 		noLine++;
 		if ( regex_search(str,emptyOrComment)) continue;
