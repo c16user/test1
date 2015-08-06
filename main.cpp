@@ -1,4 +1,4 @@
-#include "SingleBasisSet.hpp"
+#include "1SingleBasisSet.hpp"
 //#include <iostream>
 //#include <fstream>
 //#include <cstdlib>
@@ -15,7 +15,7 @@ int main(int argc, char** argv){
 	SingleBasisSet<double> A;
 
 
-	A.importBasisSetGamessFormat("HCuN.basis");
+	A.importBasisSetGamessFormat("HCuNbad.basis");
 	A.printBasisSet();
 	A.importBasisSetGamessFormat("vtz.basis");
 	A.exportBasisSetMolproFormat("3.basis");

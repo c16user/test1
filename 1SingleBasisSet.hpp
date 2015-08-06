@@ -230,7 +230,7 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 	cout << "Не ставьте комментарии, по своему формату совпадающие с названиями элементов, оболочек и других стандартных строк из базисного набора!" << endl;
 	while(getline(inp,str)) {
 		noLine++;
-		if (regex_match(str,elWBC)){
+		/*if (regex_match(str,elWBC)){
 			cout << "Предупреждение! В строке " << noLine << " \"" << str << "\"\n" << "возможно содержится название элемента, и к этой строке возможно относится базисный набор элемента, закомментированного в данной строке! Базисный набор, следующий вплоть до строки с названием следующего элемента в файле, может начать считываться, но впоследствии может быть неправильно идентифицирован! Проверьте, действительно ли корректен Ваш комментарий в данной строке" << endl;
 		attention=true;
 		warning.push_back(noLine);
@@ -240,7 +240,7 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 		attention=true;
 		str=regex_replace(str,znak,clear);	
 		warning.push_back(noLine);
-		}
+		}*/
 		if(regex_match(str,EndOfFile)){
 			endFind=true;
 			break;	
