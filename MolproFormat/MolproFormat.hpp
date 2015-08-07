@@ -1,15 +1,16 @@
-#ifndef GAMESSFORMAT_HPP
-#define GAMESSFORMAT_HPP
+#ifndef MOLPROFORMAT_HPP
+#define MOLPROFORMAT_HPP
 
 #include<iostream>
 #include<string>
 #include<boost/regex.hpp>
 #include<map>
-#include <cstdlib>
+#include<cstdlib>
 #include<vector>
 
 using std::cout;
 using std::cerr;
+
 using std::getline;
 using std::istream;
 using std::string;
@@ -24,9 +25,9 @@ using boost::regex;
 
 
 template< typename T >
-class GamessFormat{
+class MolproFormat{
 public:
-	GamessFormat(const char * streamName_);
+	MolproFormat(const char * streamName_);
 	bool readHead(istream & inp);
 	void readEnd(istream & inp);
 	bool getElementName(istream & inp,vector<string> & elementLabel, int & exitCode, int & noLine_, string & str);
@@ -40,10 +41,10 @@ private:
 };
 
 template< typename T >
-GamessFormat<T>::GamessFormat(const char * streamName_){
+MolproFormat<T>::MolproFormat(const char * streamName_){
 	noLine=0;
 	streamName = streamName_;
-	firstLine=regex("^\\s*\\$DATA\\s*(!.*)*$");//$DATA		// FIXME Таки добиться нормального объявления
+	firstLine=regex("^\\s*basis\\s*={\\s*!*.*$");//basis={		// FIXME Таки добиться нормального объявления
 	lastLine=regex("^\\s*\\$END\\s*(!.*)*$"); // $END
 	emptyOrComment=regex("^\\s*(!.*)*$");//пустая строка или коммент.
 	shell=regex("^\\s*([a-zA-Z])\\s+(\\d+)\\s*$");//оболочка
@@ -56,7 +57,7 @@ GamessFormat<T>::GamessFormat(const char * streamName_){
 }
 	
 template< typename T >
-bool GamessFormat<T>::readHead(istream & inp){
+bool MolproFormat<T>::readHead(istream & inp){
 	string str;
 	while( getline(inp,str) ){
 		noLine++;
@@ -69,8 +70,8 @@ bool GamessFormat<T>::readHead(istream & inp){
 	return false;
 }
 
-template< typename T >
-void GamessFormat<T>::readEnd(istream & inp){
+/*mplate< typename T >
+void MolproFormat<T>::readEnd(istream & inp){
 	string str;
 	while( getline(inp,str) ){
 		noLine++;
@@ -79,9 +80,9 @@ void GamessFormat<T>::readEnd(istream & inp){
 		     <<" не пустая и не закомментированная, хотя идет после $END. Обратите на это внимание.\n";
 	}
 }
-
-template< typename T >
-bool GamessFormat<T>::getLandNoPrimitives(string str, int & L, int & N) const{
+*/
+/*template< typename T >
+bool MolproFormat<T>::getLandNoPrimitives(string str, int & L, int & N) const{
 	regex shell("^\\s*([a-zA-Z])\\s+(\\d+)$");
 	boost::smatch result;
 	if(!regex_search(str,result,shell)) return false;
@@ -107,7 +108,7 @@ bool GamessFormat<T>::getLandNoPrimitives(string str, int & L, int & N) const{
 
 
 template< typename T >
-bool  GamessFormat<T>::getElementContent(istream & inp, vector < vector < vector < pair < T, T> > > > & elementContent,
+bool  MolproFormat<T>::getElementContent(istream & inp, vector < vector < vector < pair < T, T> > > > & elementContent,
 	                int & exitCode, int & noLine_, string & str){
 	double Ai,Ci,CLi;
 	int N, L;
@@ -185,7 +186,7 @@ bool  GamessFormat<T>::getElementContent(istream & inp, vector < vector < vector
 }
 
 template< typename T >
-bool  GamessFormat<T>::getElementName(istream & inp, vector<string> & elementLabel, int & exitCode, int & noLine_, string & str){
+bool  MolproFormat<T>::getElementName(istream & inp, vector<string> & elementLabel, int & exitCode, int & noLine_, string & str){
 	
 	while( getline(inp,str) ){
 		noLine++;
@@ -207,6 +208,7 @@ bool  GamessFormat<T>::getElementName(istream & inp, vector<string> & elementLab
 	exitCode = 2;  // Файл оборван
 	return false;
 }
-		
+
+*/		
 
 #endif
