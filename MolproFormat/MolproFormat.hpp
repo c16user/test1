@@ -10,18 +10,17 @@
 
 using std::cout;
 using std::cerr;
-
 using std::getline;
 using std::istream;
 using std::string;
 using std::endl;
 using std::vector;
 using std::map;
-using std::pair;
 using std::make_pair;
 using boost::regex_match;
 using boost::regex_search;
 using boost::regex;
+
 
 
 template< typename T >
@@ -29,39 +28,73 @@ class MolproFormat{
 public:
 	MolproFormat(const char * streamName_);
 	bool readHead(istream & inp);
+	bool numberShell(string str, int& L);
+	bool fromTo(string str, int& from, int& to); 
 	void readEnd(istream & inp);
 	bool getElementName(istream & inp,vector<string> & elementLabel, int & exitCode, int & noLine_, string & str);
-	bool getElementContent(istream & inp, vector < vector < vector < pair < T, T> > > > & elementContent,
-	                int & exitCode, int & noLine_, string & str);
+	bool getElementContent(istream & inp,vector<string>& elementLabel, vector < vector < vector < pair < T, T> > > > & elementContent, int & exitCode, int & noLine_, string & str);
 private:
 	int noLine;
 	const char * streamName;
-	regex firstLine, lastLine, emptyOrComment, emptyString, commentOnly, NoLShell, LShell,shell, pars, el;
-	bool getLandNoPrimitives(string str, int & L, int & N) const;
+	regex numberPars, null, expCoeff, znak, expIndexWGC, expCoeffWGC, firstLine, lastLine, empty,comment, emptyString, commentOnly, NoLShell, LShell,expIndex, pars, element;
+	//bool getLandNoPrimitives(string str, int & L, int & N) const;
 };
 
 template< typename T >
 MolproFormat<T>::MolproFormat(const char * streamName_){
 	noLine=0;
 	streamName = streamName_;
-	firstLine=regex("^\\s*basis\\s*={\\s*!*.*$");//basis={		// FIXME Таки добиться нормального объявления
-	lastLine=regex("^\\s*\\$END\\s*(!.*)*$"); // $END
-	emptyOrComment=regex("^\\s*(!.*)*$");//пустая строка или коммент.
-	shell=regex("^\\s*([a-zA-Z])\\s+(\\d+)\\s*$");//оболочка
-	emptyString=regex("^\\s*$");
-	el=regex("^\\s*[a-zA-Z]{4,}.*$");
+	firstLine=regex("^\\s*basis\\s*=\\s*\\{\\s*(!.*)*$");//basis={		// FIXME Таки добиться нормального объявления
+	lastLine=regex("^\\s*\\}\\s*(!.*)*$"); // $END
+	empty=regex("^\\s*$");//пустая строка
+	comment=regex("^\\s*(!.*)*");
 	pars=regex("\\s*[^\\s]+");
-	commentOnly=regex("^\\s*!.*$");
-	NoLShell=regex("^\\s*\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*(!.*)*$");//не L-оболочка
-	LShell=regex("^\\s*\\d+\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s+(-?\\d+\\.?\\d+[E|D]?[-|+]?\\d{0,})\\s*(!.*)*$");
+	null=regex("");
+	numberPars=regex("-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}");
+	element=regex("!\\s*([a-zA-Z]{4,})\\s*.*\\((\\d+[sSpPdDfFgGhHiIkKlLmMnN]\\s*,)+.*$");
+	expIndex=regex("^\\s*([a-zA-Z])\\s*,\\s*[a-zA-Z]+\\s*,\\s*(-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+$");
+	expIndexWGC=regex("^\\s*([a-zA-Z])\\s*,\\s*[a-zA-Z]+\\s*,\\s*(-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+\\s*(!.*)*$");
+	expCoeff=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*\\s*((-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,})\\s*,?\\s*)+$");
+	expCoeffWGC=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*\\s*((-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,})\\s*,?\\s*)+\\s*(!.*)*$");
 }
+
+template<typename T>
+bool MolproFormat<T>::fromTo(string str, int& from, int& to){
+	boost::smatch resFromTo;
+	if(!regex_search(str,resFromTo,expCoeff)) return false;
+	from=atoi((resFromTo[1].str()).c_str());
+	to=atoi((resFromTo[2].str()).c_str());
+	if(from<=0 || to<=0) return false;
+	return true;
+}
+
+template <typename T>
+bool MolproFormat<T>::numberShell(string str, int& L){
+	boost::smatch orbNumb;
+	if(!regex_match(str,orbNumb,expIndex)) return false;
+	int lTmp=-2;
+	if(orbNumb[1].str()=="s" || orbNumb[1].str()=="S") lTmp=0;	
+	if(orbNumb[1].str()=="p" || orbNumb[1].str()=="P") lTmp=1;	
+	if(orbNumb[1].str()=="d" || orbNumb[1].str()=="D") lTmp=2;	
+	if(orbNumb[1].str()=="f" || orbNumb[1].str()=="F") lTmp=3;	
+	if(orbNumb[1].str()=="g" || orbNumb[1].str()=="G") lTmp=4;	
+	if(orbNumb[1].str()=="h" || orbNumb[1].str()=="H") lTmp=5;	
+	if(orbNumb[1].str()=="i" || orbNumb[1].str()=="I") lTmp=6;	
+	if(orbNumb[1].str()=="k" || orbNumb[1].str()=="K") lTmp=7;	
+	if(orbNumb[1].str()=="l" || orbNumb[1].str()=="L") lTmp=8;
+	if(lTmp==-2) return false;
+	L=lTmp;	
+	return true;
+
+}
+
 	
 template< typename T >
 bool MolproFormat<T>::readHead(istream & inp){
 	string str;
-	while( getline(inp,str) ){
+	while(getline(inp,str)){
 		noLine++;
-		if(regex_match(str,emptyOrComment)) continue;  
+		if(regex_match(str,empty) || regex_match(str,comment)) continue;  
 		if(regex_match(str,firstLine)) return true;
 		cerr << "Ошибка!!! В строке " << noLine << " \""<<str<<"\"\n  ошибка, чтение из "<< streamName<<" не будет продолжено! " << endl;
 		return false;
@@ -70,145 +103,226 @@ bool MolproFormat<T>::readHead(istream & inp){
 	return false;
 }
 
-/*mplate< typename T >
-void MolproFormat<T>::readEnd(istream & inp){
-	string str;
-	while( getline(inp,str) ){
-		noLine++;
-		if(regex_match(str,emptyOrComment)) continue;  
-		cout << "Предупреждение. Строка " << noLine << " \""<<str<<"\"\n в "<<streamName
-		     <<" не пустая и не закомментированная, хотя идет после $END. Обратите на это внимание.\n";
-	}
-}
-*/
-/*template< typename T >
-bool MolproFormat<T>::getLandNoPrimitives(string str, int & L, int & N) const{
-	regex shell("^\\s*([a-zA-Z])\\s+(\\d+)$");
-	boost::smatch result;
-	if(!regex_search(str,result,shell)) return false;
-	int lTmp=-2;
-	if ((result[1].str())=="s" || (result[1].str())=="S" ) lTmp=0;
-	if ((result[1].str())=="p" || (result[1].str())=="P" ) lTmp=1;
-	if ((result[1].str())=="d" || (result[1].str())=="D" ) lTmp=2;
-	if ((result[1].str())=="f" || (result[1].str())=="F" ) lTmp=3;
-	if ((result[1].str())=="g" || (result[1].str())=="G" ) lTmp=4;
-	if ((result[1].str())=="h" || (result[1].str())=="H" ) lTmp=5;
-	if ((result[1].str())=="i" || (result[1].str())=="I" ) lTmp=6;
-	if ((result[1].str())=="k" || (result[1].str())=="K" ) lTmp=7;
-	if ((result[1].str())=="l") lTmp=8;
-	if ((result[1].str())=="L") lTmp=-1;
-	if ((result[1].str())=="m" || (result[1].str())=="M" ) lTmp=9;
-	if ((result[1].str())=="n" || (result[1].str())=="N" ) lTmp=10;
-	if (lTmp==-2) return false;
-	N=atoi((result[2].str()).c_str());
-	if (N==0) cout<<"Предупреждение: задано 0 примитивов.\n";
-	L=lTmp;
-	return true;
-}
 
 
-template< typename T >
-bool  MolproFormat<T>::getElementContent(istream & inp, vector < vector < vector < pair < T, T> > > > & elementContent,
-	                int & exitCode, int & noLine_, string & str){
-	double Ai,Ci,CLi;
-	int N, L;
-	boost::smatch result;
-	boost::smatch CiAiNoL;
-	boost::smatch CiAiL;
-	elementContent.clear();
-	elementContent.resize(20 ); // с запасом, потом отрезать
-	int Lmax=-1; //	а это как раз будет запоминать максимальную L, чтобы остальное отрезать
-	vector < pair < T, T > > basisFunc1;
-	vector < pair < T, T > > basisFunc2;  // для L оболочки
-	while (getline(inp,str) ) {
-		noLine++;
-		if(regex_match(str,emptyString)){
-			elementContent.resize(Lmax+1);
-			return true;
-		}
-		if(regex_match(str,commentOnly)) continue; 
-		if(regex_match(str,lastLine)){
-			exitCode = 5; 	// FIXME Magic constant - это очень плохо!
-			elementContent.resize(Lmax+1);
-			return true;
-		}
-		if (!regex_match(str,result,shell)){
-			cerr << "Ошибка!!! Строка " << noLine << " : \"" << str << "\"\n должна быть описанием оболочки.\n";
-			return false;
-		}
-		if(!getLandNoPrimitives(str,L,N)){
-			cerr << "Ошибка!!! В строке " << noLine << " : \"" << str << "\"\n   ожидалось чтение заголовка в формате \"оболочка - число примитивов\"\n";
-			return false;
-		}
-		// вот тут мы можем находиться после того, как считалась оболочка
-		if (Lmax<abs(L)) Lmax=abs(L);
-		basisFunc1.clear();
-		basisFunc2.clear();
-		for (int i=0; i<N; i++){
-			if(!getline(inp,str)){
-				cerr << "Ошибка - неожиданный конец ввода "<< streamName <<". Не обнаружено ключевое слово $END\n";
-				return false;
-			}
-			noLine++;
-			if(regex_match(str,commentOnly)){
-				i--;
-				continue; 
-			}
-			if ((L==-1)&&(regex_match(str,CiAiL,LShell))){
-				Ai=atof((CiAiL[1].str()).c_str());
-				Ci=atof((CiAiL[2].str()).c_str());
-				CLi=atof((CiAiL[3].str()).c_str());
-				cout << Ai << " " << Ci << " " << CLi << endl;
-				basisFunc1.push_back(make_pair(Ai,Ci));
-				basisFunc2.push_back(make_pair(Ai,CLi));
-				continue;
-			}
-			if ((L>-1)&&(regex_match(str,CiAiNoL,NoLShell))){
-				Ai=atof((CiAiNoL[1].str()).c_str());
-				Ci=atof((CiAiNoL[2].str()).c_str());
-				cout << Ai << " " << Ci << endl;
-				basisFunc1.push_back(make_pair(Ai,Ci));
-				continue;
-			}
-			cerr << "Ошибка!!! Строка " << noLine << " : \"" << str << "\"\n не может описывать примитив!"<<
-			" Чтение из "<< streamName<<" не будет продолжено! " << endl;
-			return false;
-		}
-		if(L == -1){
-			elementContent[0].push_back(basisFunc1);
-			elementContent[1].push_back(basisFunc2);
-		} else {
-			elementContent[L].push_back(basisFunc1);
-		}
-	}
-	cerr << "Ошибка - неожиданный конец ввода "<< streamName <<". Не обнаружено ключевое слово $END\n";
-	return false;
-}
 
-template< typename T >
-bool  MolproFormat<T>::getElementName(istream & inp, vector<string> & elementLabel, int & exitCode, int & noLine_, string & str){
+template <typename T>
+bool  MolproFormat<T>::getElementName(istream & inp, vector<string> & elementLabel, int & exitCode, int& noLine_, string & str){
 	
-	while( getline(inp,str) ){
-		noLine++;
-		if ( regex_search(str,emptyOrComment)) continue;
-		if ( regex_match(str,lastLine ) ) return false;
-		if ( regex_match ( str,el)){
-			elementLabel.clear();
+	elementLabel.clear();
+		if(regex_match(str,element)){
 			boost::sregex_iterator it(str.begin(),str.end(),pars);
-			boost::sregex_iterator itbad;//этот if-блок-парсинг строки с названием элемента.
-			while (it != itbad) elementLabel.push_back((*it++).str());
-			return true;
+			boost::sregex_iterator itbad;
+			while(it!=itbad){
+				elementLabel.push_back((*it++).str());
+			}
+			return true;	
+		}
+	while(getline(inp,str)){
+		noLine++;
+		if(regex_match(str,empty)){
+			continue;
+		}
+		if((regex_match(str,comment)) && !regex_match(str,element)){
+			continue;
+		}
+		if(regex_match(str,element)){
+			boost::sregex_iterator it(str.begin(),str.end(),pars);
+			boost::sregex_iterator itbad;
+			while(it!=itbad){
+				elementLabel.push_back((*it++).str());
+			}
+			return true;	
+		}
+		if(regex_match(str,lastLine)){
+			return false; 
 		}
 		cerr << "Ошибка!!! Строка " << noLine << " : \"" << str << "\"\n не может быть названием элемента."<<
 			" Чтение из "<< streamName<<" не будет продолжено! " << endl;
 		exitCode = 1; // Не распознан элемент
 		return false;
-	}
-	cerr << "Ошибка - неожиданный конец ввода "<< streamName <<". Не обнаружено ключевое слово $END\n";
+		}
+
+	cerr << "Ошибка - неожиданный конец ввода "<< streamName <<". Не обнаружена завершающая базисный набор фигурная скобка \"}\" \n";
 	exitCode = 2;  // Файл оборван
 	return false;
+		
 }
 
-*/		
+
+template <typename T>
+bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLabel, vector < vector < vector < pair < T, T> > > > & elementContent, int & exitCode, int & noLine_ , string & str){
+
+		elementContent.clear();
+		int L=-2;
+		int Lmax=0;
+		int from=-1;
+		int to=-1;
+		int help=0;
+		bool findNewShell=false;
+		vector <double> index;
+		vector <double> cfc;
+		vector < pair <T,T> > primitive;
+		vector < vector <pair <T,T> > > basisFunc;
+		 
+		while(getline(inp,str)){
+			noLine++;
+			if(elementContent.empty()){
+				if(regex_match(str,element)){ 
+					boost::sregex_iterator it(str.begin(),str.end(),pars);
+					boost::sregex_iterator itbad;
+					while(it!=itbad)
+					elementLabel.push_back((*it++).str());
+					continue; 
+				}
+			}
+			if(regex_match(str,empty)){
+				continue;
+			}
+			if(regex_match(str,comment) && !regex_match(str,element)){
+				continue;
+			}
+			if(regex_match(str,element)){
+				return true;
+			}
+			if(regex_match(str,lastLine)){
+				exitCode=5;
+				return false;
+			}
+			if(regex_match(str,expCoeff)){
+				cerr << "В строке " << noLine << " : \n";
+				cerr << str << endl;
+				cerr << "Ошибка! После названия элемента должна следовать строка, определяющая оболочку, а строка " << noLine;
+				cerr << " содержит коэффициенты перед экспонентами!";
+				cerr << "Чтение файла не будет продолжено" << endl;
+				return false;
+			}
+			point:	
+			if(regex_match(str,expIndexWGC))
+				str=regex_replace(str,comment,null);  
+			if(regex_match(str,expIndex)){//встретили строку с показателями экспонент
+				string str2=str;
+				index.clear();
+				cfc.clear();
+				primitive.clear();
+				basisFunc.clear();
+				if(regex_match(str,lastLine)){
+					cerr << "В строке " << noLine << " : \n";
+					cerr << str << endl;
+					cerr << "Неожиданный конец файла! " << endl;
+					return false;
+				}
+				if(!numberShell(str,L)){
+					cerr << "Ошибка! В строке " << noLine << " : \n";
+					cerr << str << endl;
+					cerr << "Не распознана оболочка!" << endl;
+					return false;
+				}
+				if(L>=Lmax){
+					Lmax=L;
+					elementContent.resize(Lmax+1);
+				}
+				boost::sregex_iterator numbIterator(str.begin(),str.end(),numberPars);
+				boost::sregex_iterator itbad;
+				while(numbIterator != itbad){//засунули показатели в вектор
+					index.push_back(atof(((*numbIterator++).str()).c_str()));		
+				}
+				getline(inp,str);
+				noLine++;
+				while(1){
+					if(regex_match(str,empty)){
+						getline(inp,str);
+						noLine++;
+						continue;
+					}
+					if(regex_match(str,element)){
+						elementContent[L]=basisFunc;
+						return true;
+					}
+					if(regex_match(str,lastLine)){
+						elementContent[L]=basisFunc;
+						exitCode=5;
+						return true;
+					}
+					if(regex_match(str,comment) && !regex_match(str,element)){
+						getline(inp,str);
+						noLine++;
+						continue;
+					}
+					if(regex_match(str,expIndex) || regex_match(str,expIndexWGC)){
+						elementContent[L]=basisFunc;
+						findNewShell=true;
+						break;
+					}
+					if(regex_match(str,expCoeff) || regex_match(str,expCoeff)){
+						if(regex_match(str,expCoeff))
+							str=regex_replace(str,comment,null);
+						cfc.clear();
+						primitive.clear();
+						if(!fromTo(str,from,to)){
+							cerr << "В строке " << noLine << " : \n";
+							cerr << str << endl;
+							cerr << "Невозможно распознать расстановку коэффициентов перед экспонентами.";
+							cerr << " Чтение файла не будет продолжено!" << endl;
+							return false; 
+						}
+						boost::sregex_iterator coef(str.begin(),str.end(),numberPars);
+						boost::sregex_iterator inv;
+						while(coef!=inv){
+							help++;
+							cfc.push_back(atof(((*coef++).str()).c_str()));
+							if(help==1)
+							cfc.erase(cfc.begin());
+						}
+						help=0;
+						if(cfc.size()!=to-from+1){
+							cout << "В строке " << noLine << " : \n";
+							cout << str << endl;
+							cout << "Указанное число коэффициентов не соответствует их истинному количеству!\n";
+							cout << "Чтение файла не будет продолжено!" << endl;
+							return false;
+						}
+						int q=0;
+						for(int i=from-1; i<=to-1; i++){
+							primitive.push_back(make_pair(index[i],cfc[q]));
+							q++;
+						}
+						basisFunc.push_back(primitive);
+						getline(inp,str);
+						noLine++;
+						continue;	
+					}
+					
+					cerr << "Строка " << noLine << " : \n";
+					cerr << str << endl;
+					cerr << "Не является строкой, содержащей коэффициенты или название новой оболочки, ";
+					cerr << "или названием нового элемента или концом файла! ";
+					cerr << "Чтение файла не будет продолжено!" << endl;
+					return false;
+					getline(inp,str);
+					noLine++;
+				}
+				if(findNewShell)
+				goto point;
+				
+
+			}
+
+
+
+	}
+}
+	
+
+template< typename T >
+void MolproFormat<T>::readEnd(istream & inp){
+	string str;
+	while( getline(inp,str) ){
+		noLine++;
+		if(regex_match(str,empty) || regex_match(str,comment)) continue;  
+		cout << "Предупреждение. Строка " << noLine << " \""<<str<<"\"\n в "<<streamName
+		     <<" не пустая и не закомментированная, хотя идет после \"}\". Обратите на это внимание.\n";
+	}
+}
 
 #endif

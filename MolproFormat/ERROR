@@ -1,0 +1,14 @@
+если с целью проверить правильность работы программы поставить какую то хрень ближе к концу строки с коэффициентами или 
+с показателями экспонент, то все падает!!!
+
+
+****************************
+
+terminate called after throwing an instance of 'boost::exception_detail::clone_impl<boost::exception_detail::error_info_injector<std::runtime_error> >'
+  what():  The complexity of matching the regular expression exceeded predefined bounds.  Try refactoring the regular expression to make each choice made by the state machine unambiguous.  This exception is thrown to prevent "eternal" matches that take an indefinite period time to locate.
+Aborted (core dumped)
+
+
+
+******************************
+это та самая ошибка

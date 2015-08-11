@@ -6,9 +6,8 @@
 #include<iostream>
 #include<fstream>
 #include<string>
-#include<iterator>
+#include <iterator>
 #include"GamessFormat.hpp"
-#include"MolproFormat.hpp"
 
 using std::vector;
 using std::map;
@@ -72,56 +71,14 @@ void SingleBasisSet<T>::printBasisSet() const{
 
 template< typename T >
 bool SingleBasisSet<T>::importBasisSetMolproFormat( const char * fileName){
-	//проверки
 	if ( !content.empty() ) {
 		cerr << "Базисный набор уже задан, ошибка!\n";
 		return false;
 	}
 	vector<string> elementLabel;
-	vector < vector < vector< pair <T,T > > > > elementContent;
-	string str;
-	MolproFormat<T> molpro(fileName);
-	int noLine;
-	int exitCode=0;
-	string lastString;
-	//открываем файл
-	ifstream inp (fileName); 
-	if (!molpro.readHead(inp)){
-		inp.close();
-		return false;
-	}
-	while (molpro.getElementName(inp,elementLabel, exitCode, noLine,str)){
-		if ( content.find(elementLabel) != content.end() ){
-			cerr << "Ошибка в строке\n  " << noLine << " : " << str << "\n   такой элемент уже встречался в "<<fileName<<endl;
-			inp.close();
-			return false;
-		}
-		if (!molpro.getElementContent(inp,elementLabel,elementContent,exitCode,noLine,str)){
-			inp.close();
-			return false;
-		}
-		content[elementLabel] = elementContent;
-		if (exitCode==5){ // небольшой костыль, есть встретился конец файла
-			exitCode=0;
-			break;
-		}
-	}
-	if(exitCode!=0) return false;
-	molpro.readEnd(inp);
-	inp.close();
-
-/*
-	здесь будут три функции, по своему смыслу похожие на аналогичные функции для формата Gamess. 
-	1)Считать шапку файла до строки со словом, определяющим, что далее будет следовать базисный набор.
-	2)Считать базисный набор и поместить его в контейнер такой же как для формата Gamess. Все форматы базисных наборов 
-	будут храниться в одинаковых по своему формату контейнерах
-	3)Считать конец файла
-	Все функции , в том числе вторую полностью реализовать в отдельном файле. В этом файле сделать только глобальный проверки-
-	существует ли входно файл, если в нем строки, не присутствует ли элементлэйбле (ключе) элемент с названием, встретившемся 
-	в данном файле и т.п.
-*/
-	//content.clear();
- 
+	vector < vector < vector < pair < T, T> > > > elementContent;
+	elementLabel.push_back("carbon");
+	content[elementLabel]=elementContent;
 	return true;
 }
 
