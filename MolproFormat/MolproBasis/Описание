@@ -19,3 +19,5 @@ what(): The complexity of matching the regular expression exceeded predefined bo
 
 Если компилировать с флагами -Wall и -Weffc++ то появляется много всего интересного. 
 
+
+Обнаружено, что файл HNiF.basis не читается!
