@@ -51,10 +51,10 @@ MolproFormat<T>::MolproFormat(const char * streamName_){
 	pars=regex("\\s*[^\\s]+");
 	null=regex("");
 	numberPars=regex("-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}");
-	element=regex("!\\s*([a-zA-Z]{4,})\\s*.*\\(\\d+[sSpPdDfFgGhHiIkKlLmMnN]\\s*,?\\)+.*$");
+	element=regex("^\\s*!\\s*([a-zA-Z]{4,})\\s*.*\\((\\d+[sSpPdDfFgGhHiIkKlLmMnN]\\s*,?)+\\)+.*$");
 	expIndex=regex("^\\s*([a-zA-Z])\\s*,\\s*[a-zA-Z]+\\s*,\\s*(-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+$");
 	expIndexWGC=regex("^\\s*([a-zA-Z])\\s*,\\s*[a-zA-Z]+\\s*,\\s*(-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+\\s*(!.*)*$");
-	expCoeff=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\+)\\s*,\\s*(-?\\d+\\.?\\d*[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+\\s*$");
+	expCoeff=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\+)\\s*,\\s*(-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}\\s*,\\s*)+\\s*$");
 	expCoeffWGC=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*\\s*((-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,})\\s*,?\\s*)+\\s*(!.*)*$");
 }
 
@@ -255,8 +255,8 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 						findNewShell=true;
 						break;
 					}
-					if(regex_match(str,expCoeff) || regex_match(str,expCoeff)){
-						if(regex_match(str,expCoeff))
+					if(regex_match(str,expCoeff) || regex_match(str,expCoeffWGC)){
+						if(regex_match(str,expCoeffWGC))
 							str=regex_replace(str,comment,null);
 						cfc.clear();
 						primitive.clear();
