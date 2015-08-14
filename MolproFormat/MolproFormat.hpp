@@ -303,7 +303,7 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 						getline(inp,str);
 						noLine++;
 						continue;
-						//TODO сделать проверку на наличие коэффициентов после показателей	
+						//TODO сделать проверку на наличие коэффициентов после показателей.
 					}
 					/*if(basisFunc.empty()){
 						cerr << "Строка " << noLine << " : \n";
