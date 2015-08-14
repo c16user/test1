@@ -81,6 +81,8 @@ bool MolproFormat<T>::numberShell(string str, int& L){
 	if(orbNumb[1].str()=="i" || orbNumb[1].str()=="I") lTmp=6;	
 	if(orbNumb[1].str()=="k" || orbNumb[1].str()=="K") lTmp=7;	
 	if(orbNumb[1].str()=="l" || orbNumb[1].str()=="L") lTmp=8;
+	if(orbNumb[1].str()=="m" || orbNumb[1].str()=="M") lTmp=9;
+	if(orbNumb[1].str()=="n" || orbNumb[1].str()=="N") lTmp=10;
 	if(lTmp==-2) return false;
 	L=lTmp;	
 	return true;
@@ -159,6 +161,7 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 		int to=-1;
 		int help=0;
 		bool findNewShell=false;
+		bool noCoeff=true;
 		vector <double> index;
 		vector <double> cfc;
 		vector < pair <T,T> > primitive;
@@ -196,7 +199,8 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 				cerr << "Чтение файла не будет продолжено" << endl;
 				return false;
 			}
-			point:	
+			point:
+			noCoeff=true;
 			if(regex_match(str,expIndexWGC))
 				str=regex_replace(str,comment,null);  
 			if(regex_match(str,expIndex)){//встретили строку с показателями экспонент
@@ -220,6 +224,14 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 				if(L>=Lmax){
 					Lmax=L;
 					elementContent.resize(Lmax+1);
+				}
+				if(L<Lmax){
+					cerr << "В строке " << noLine << " : \n";
+					cerr << str << endl;
+					cerr << "Ошибка! Перед этой строкой";
+					cerr << " ожидалось название элемента!" << endl;
+					cerr << "Чтение файла не будет продолжено!" << endl;
+					return false;
 				}
 				boost::sregex_iterator numbIterator(str.begin(),str.end(),numberPars);
 				boost::sregex_iterator itbad;
@@ -254,6 +266,7 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 						break;
 					}
 					if(regex_match(str,expCoeff) || regex_match(str,expCoeffWGC)){
+						noCoeff=false;
 						if(regex_match(str,expCoeffWGC))
 							str=regex_replace(str,comment,null);
 						cfc.clear();
@@ -289,13 +302,17 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 						basisFunc.push_back(primitive);
 						getline(inp,str);
 						noLine++;
-						continue;	
+						continue;
+						//TODO сделать проверку на наличие коэффициентов после показателей	
 					}
-					
-					cerr << "Строка " << noLine << " : \n";
+					/*if(basisFunc.empty()){
+						cerr << "Строка " << noLine << " : \n";
+						cerr << str << endl;
+						cerr << "Не является строкой содержащей коэффициенты! Чтение файла не будет продолжено\n";
+						return false; 
+					}*/
+					cerr << "Невозможно считать строку " << noLine << " : \n";
 					cerr << str << endl;
-					cerr << "Не является строкой, содержащей коэффициенты или название новой оболочки, ";
-					cerr << "или названием нового элемента или концом файла! ";
 					cerr << "Чтение файла не будет продолжено!" << endl;
 					return false;
 					getline(inp,str);
