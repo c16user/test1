@@ -7,7 +7,7 @@ int main(int argc, char** argv){
 	//A.printBasisSet();
 	//A.exportBasisSetMolproFormat("3.basis");
 	A.importBasisSetMolproFormat("1cc-pVTZ.basis");
-	//A.printBasisSet();
+	A.printBasisSet();
 	return 0;
 }
 
