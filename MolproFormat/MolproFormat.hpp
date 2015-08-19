@@ -44,8 +44,8 @@ template< typename T >
 MolproFormat<T>::MolproFormat(const char * streamName_){
 	noLine=0;
 	streamName = streamName_;
-	firstLine=regex("^\\s*basis\\s*=\\s*\\{\\s*(!.*)*$");//basis={		// FIXME Таки добиться нормального объявления
-	lastLine=regex("^\\s*\\}\\s*(!.*)*$"); // $END
+	firstLine=regex("^\\s*basis\\s*=\\s*\\{\\s*(!.*)*$");//basis={		
+	lastLine=regex("^\\s*\\}\\s*(!.*)*$"); // 
 	empty=regex("^\\s*$");//пустая строка
 	comment=regex("^\\s*(!.*)*");
 	pars=regex("\\s*[^\\s]+");
@@ -201,11 +201,10 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 				return false;
 			}
 			point:
-			//noCoeff=true;
+			noCoeff=true;
 			if(regex_match(str,expIndexWGC))
 				str=regex_replace(str,comment,null);  
 			if(regex_match(str,expIndex)){//встретили строку с показателями экспонент
-				noCoeff=true;
 				index.clear();
 				cfc.clear();
 				primitive.clear();
