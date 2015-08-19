@@ -49,12 +49,13 @@ MolproFormat<T>::MolproFormat(const char * streamName_){
 	comment=regex("^\\s*(!.*)*");
 	pars=regex("\\s*[^\\s]+");
 	null=regex("");
-	numberPars=regex("-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}");
+	numberPars=regex("-?\\d+\\.?[\\d+]?[e|E|d|D]?[-|\\+]?\\d*");
 	element=regex("^\\s*!\\s*([a-zA-Z]{4,})\\s*.*\\((\\d+[sSpPdDfFgGhHiIkKlLmMnN]\\s*,?)+\\)+.*$");
 	expIndex=regex("^\\s*([a-zA-Z])\\s*,\\s*[a-zA-Z]+\\s*,\\s*(-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+$");
 	expIndexWGC=regex("^\\s*([a-zA-Z])\\s*,\\s*[a-zA-Z]+\\s*,\\s*(-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+\\s*(!.*)*$");
-	expCoeff=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*(-?\\d+\\.?[\\d+]?[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+$");
-	expCoeffWGC=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*\\s*((-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,})\\s*,?\\s*)+\\s*(!.*)*$");
+	//expCoeff=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*(-?\\d+\\.?[\\d+]?[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+$");
+	expCoeff=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*(-?\\d+\\.?[\\d+]?[e|E|d|D]?[-|\\+]?\\d*\\s*,?\\s*)+$");
+	expCoeffWGC=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*\\s*((-?\\d+\\.{0,1}\\d+[e|E|d|D]?[-|+]?\\d{0,})\\s*,?\\s*)+\\s*(!.*)*$");
 }
 
 template<typename T>

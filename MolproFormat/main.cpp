@@ -6,7 +6,7 @@ int main(int argc, char** argv){
 	//if(!A.importBasisSetGamessFormat("HCuN.basis")) return 1;
 	//A.printBasisSet();
 	//A.exportBasisSetMolproFormat("3.basis");
-	A.importBasisSetMolproFormat("1cc-pVTZ.basis");
+	A.importBasisSetMolproFormat("l.basis");
 	A.printBasisSet();
 	return 0;
 }
