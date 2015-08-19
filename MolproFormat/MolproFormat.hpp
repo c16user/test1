@@ -8,6 +8,7 @@
 #include<cstdlib>
 #include<vector>
 
+typedef unsigned int uint;
 using std::cout;
 using std::cerr;
 using std::getline;
@@ -29,7 +30,7 @@ public:
 	MolproFormat(const char * streamName_);
 	bool readHead(istream & inp);
 	bool numberShell(string str, int& L);
-	bool fromTo(string str, int& from, int& to); 
+	bool fromTo(string str,  uint& from, uint& to); 
 	void readEnd(istream & inp);
 	bool getElementName(istream & inp,vector<string> & elementLabel, int & exitCode, int & noLine_, string & str);
 	bool getElementContent(istream & inp,vector<string>& elementLabel, vector < vector < vector < pair < T, T> > > > & elementContent, int & exitCode, int & noLine_, string & str);
@@ -49,17 +50,16 @@ MolproFormat<T>::MolproFormat(const char * streamName_){
 	comment=regex("^\\s*(!.*)*");
 	pars=regex("\\s*[^\\s]+");
 	null=regex("");
-	numberPars=regex("-?\\d+\\.?[\\d+]?[e|E|d|D]?[-|\\+]?\\d*");
+	numberPars=regex("-?\\d+(\\.?\\d+)?([e|E|d|D][-|+]\\d+)?");
 	element=regex("^\\s*!\\s*([a-zA-Z]{4,})\\s*.*\\((\\d+[sSpPdDfFgGhHiIkKlLmMnN]\\s*,?)+\\)+.*$");
 	expIndex=regex("^\\s*([a-zA-Z])\\s*,\\s*[a-zA-Z]+\\s*,\\s*(-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+$");
 	expIndexWGC=regex("^\\s*([a-zA-Z])\\s*,\\s*[a-zA-Z]+\\s*,\\s*(-?\\d+\\.?\\d+[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+\\s*(!.*)*$");
-	//expCoeff=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*(-?\\d+\\.?[\\d+]?[e|E|d|D]?[-|+]?\\d{0,}\\s*,?\\s*)+$");
-	expCoeff=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*(-?\\d+\\.?[\\d+]?[e|E|d|D]?[-|\\+]?\\d*\\s*,?\\s*)+$");
+	expCoeff=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*(-?\\d+\\.?[\\d+]?[e|E|d|D]?[-|+]?\\d*\\s*,?\\s*)+$");
 	expCoeffWGC=regex("^\\s*[cC]\\s*,\\s*(-?\\d+)\\.?(-?\\d+)\\s*,\\s*\\s*((-?\\d+\\.{0,1}\\d+[e|E|d|D]?[-|+]?\\d{0,})\\s*,?\\s*)+\\s*(!.*)*$");
 }
 
 template<typename T>
-bool MolproFormat<T>::fromTo(string str, int& from, int& to){
+bool MolproFormat<T>::fromTo(string str, uint& from, uint& to){
 	boost::smatch resFromTo;
 	if(!regex_search(str,resFromTo,expCoeff)) return false;
 	from=atoi((resFromTo[1].str()).c_str());
@@ -158,8 +158,8 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 		elementContent.clear();
 		int L=-2;
 		int Lmax=0;
-		int from=-1;
-		int to=-1;
+		uint from=0;
+		uint to=0;
 		int help=0;
 		bool findNewShell=false;
 		bool noCoeff=true;
@@ -201,11 +201,11 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 				return false;
 			}
 			point:
-			noCoeff=true;
+			//noCoeff=true;
 			if(regex_match(str,expIndexWGC))
 				str=regex_replace(str,comment,null);  
 			if(regex_match(str,expIndex)){//встретили строку с показателями экспонент
-				string str2=str;
+				noCoeff=true;
 				index.clear();
 				cfc.clear();
 				primitive.clear();
@@ -248,10 +248,12 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 						continue;
 					}
 					if(regex_match(str,element)){
+						if(noCoeff) break;
 						elementContent[L]=basisFunc;
 						return true;
 					}
 					if(regex_match(str,lastLine)){
+						if(noCoeff) break;
 						elementContent[L]=basisFunc;
 						exitCode=5;
 						return true;
@@ -262,6 +264,7 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 						continue;
 					}
 					if(regex_match(str,expIndex) || regex_match(str,expIndexWGC)){
+						if(noCoeff) break;
 						elementContent[L]=basisFunc;
 						findNewShell=true;
 						break;
@@ -296,7 +299,7 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 							return false;
 						}
 						int q=0;
-						for(int i=from-1; i<=to-1; i++){
+						for(uint i=from-1; i<=to-1; i++){
 							primitive.push_back(make_pair(index[i],cfc[q]));
 							q++;
 						}
@@ -306,12 +309,6 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 						continue;
 						//TODO сделать проверку на наличие коэффициентов после показателей.
 					}
-					/*if(basisFunc.empty()){
-						cerr << "Строка " << noLine << " : \n";
-						cerr << str << endl;
-						cerr << "Не является строкой содержащей коэффициенты! Чтение файла не будет продолжено\n";
-						return false; 
-					}*/
 					cerr << "Невозможно считать строку " << noLine << " : \n";
 					cerr << str << endl;
 					cerr << "Чтение файла не будет продолжено!" << endl;
@@ -319,6 +316,12 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 					getline(inp,str);
 					noLine++;
 				}
+				if(noCoeff){
+					cerr << "В строке " << noLine << " : \n";
+					cerr << str << endl;
+					cerr << "Должны быть коэффициенты! Чтение файла не будет продолжено!" << endl;
+					return false;
+				}				
 				if(findNewShell)
 				goto point;
 				
@@ -328,6 +331,10 @@ bool MolproFormat<T>::getElementContent(istream & inp, vector<string>& elementLa
 
 
 	}
+	cerr << "В строке " << noLine << " : \n";	
+	cerr << str << endl;
+	cerr << "Неизвестная ошибка! Чтение файла не будет продолжено!" << endl;
+	return false;
 }
 	
 
