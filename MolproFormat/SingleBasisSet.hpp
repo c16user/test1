@@ -37,7 +37,7 @@ public:
 	bool importBasisSetMolproIntFormat( const char * fileName);		// Приоритет 1 (Ваня, Дима)
 	bool importBasisSetGamessFormat( const char * fileName);	
 	bool importBasisSetPiterFormat( const char * fileName){ return true;};	// Приоритет 1 (Ваня)
-	bool exportBasisSetMolproFormat( const char * fileName, const char * outputFile) const;  // Приоритет 3 
+	bool exportBasisSetMolproFormat( const char * fileName) const;  // Приоритет 3 
 	bool exportBasisSetGamessFormat( const char * fileName) const;	// Приоритет 2
 	void sortByAlphaDecrease(){};			// Приоритет 3
 	//char shellName(int u);
@@ -181,8 +181,8 @@ char shellName(int u){
 }
 
 template< typename T >
-bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName, const char * outputFile) const{
-		ofstream out(outputFile);
+bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const{
+		ofstream out("outputFile");
 		vector <double> search;
 		vector <double> uniqueIndex;
 		vector <double> coef;
