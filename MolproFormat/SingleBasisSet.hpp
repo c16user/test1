@@ -38,6 +38,7 @@ public:
 	bool exportBasisSetMolproFormat( const char * fileName) const;  // Приоритет 3 
 	bool exportBasisSetGamessFormat( const char * fileName) const;	// Приоритет 2
 	void sortByAlphaDecrease(){};			// Приоритет 3
+	//char shellName(int u);
 };
 
 
@@ -110,18 +111,6 @@ bool SingleBasisSet<T>::importBasisSetMolproFormat( const char * fileName){
 	molpro.readEnd(inp);
 	inp.close();
 
-/*
-	здесь будут три функции, по своему смыслу похожие на аналогичные функции для формата Gamess. 
-	1)Считать шапку файла до строки со словом, определяющим, что далее будет следовать базисный набор.
-	2)Считать базисный набор и поместить его в контейнер такой же как для формата Gamess. Все форматы базисных наборов 
-	будут храниться в одинаковых по своему формату контейнерах
-	3)Считать конец файла
-	Все функции , в том числе вторую полностью реализовать в отдельном файле. В этом файле сделать только глобальный проверки-
-	существует ли входно файл, если в нем строки, не присутствует ли элементлэйбле (ключе) элемент с названием, встретившемся 
-	в данном файле и т.п.
-*/
-	//content.clear();
- 
 	return true;
 }
 
@@ -172,8 +161,55 @@ bool SingleBasisSet<T>::importBasisSetGamessFormat( const char * fileName){
 	return true;
 }
 
+//template<typename T>
+char shellName(int u){
+	if(u==0) return 's';
+	if(u==1) return 'p';
+	if(u==2) return 'd';
+	if(u==3) return 'f';
+	if(u==4) return 'g';
+	if(u==5) return 'h';
+	if(u==6) return 'i';
+	if(u==7) return 'k';
+	if(u==8) return 'l';
+	if(u==9) return 'm';
+	if(u==10) return 'n';
+	cerr<<"Не распознана оболочка!\n"; 
+	return '1';
+}
+
 template< typename T >
 bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const{
+		vector <double> search;
+		bool alreadyExist=false;
+	for (typename map< vector< string> , vector < vector < vector < pair < T, T> > > > >::const_iterator it = content.begin(); it != content.end(); it++){ 
+		for ( int i=0; i<int(it->first.size()); i++){
+			if(it->first[i]=="!") cout<<'\n';
+			cout<<' '<<it->first[i];
+		}
+		cout<<'\n'; 
+		for (int i=0; i<int(it->second.size()); i++){
+			cout<<shellName(i)<<" , EN , ";
+			search.clear();
+			for (int j=0; j<int(it->second[i].size()); j++){
+				alreadyExist=false;
+				for (int l=0; l<int(it->second[i][j].size()); l++){
+					for(unsigned k=0; k<search.size(); k++){
+						if(it->second[i][j][l].first==search[k]){
+							alreadyExist=true;
+							break;
+						}
+					}
+					if(alreadyExist) continue;			
+					cout<<it->second[i][j][l].first<<" , ";
+					search.push_back(it->second[i][j][l].first);
+				}
+			}
+			cout<<'\n';
+		}
+
+
+	}
 	return true;	
 }
 
