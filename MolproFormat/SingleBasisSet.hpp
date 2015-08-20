@@ -10,6 +10,7 @@
 #include"GamessFormat.hpp"
 #include"MolproFormat.hpp"
 
+typedef unsigned unsgd;
 using std::vector;
 using std::map;
 using std::pair;
@@ -19,6 +20,7 @@ using std::cerr;
 using std::cout;
 using std::endl;
 using std::ifstream;
+using std::ostream;
 using std::ofstream;
 using std::getline;
 
@@ -35,7 +37,7 @@ public:
 	bool importBasisSetMolproIntFormat( const char * fileName);		// Приоритет 1 (Ваня, Дима)
 	bool importBasisSetGamessFormat( const char * fileName);	
 	bool importBasisSetPiterFormat( const char * fileName){ return true;};	// Приоритет 1 (Ваня)
-	bool exportBasisSetMolproFormat( const char * fileName) const;  // Приоритет 3 
+	bool exportBasisSetMolproFormat( const char * fileName, const char * outputFile) const;  // Приоритет 3 
 	bool exportBasisSetGamessFormat( const char * fileName) const;	// Приоритет 2
 	void sortByAlphaDecrease(){};			// Приоритет 3
 	//char shellName(int u);
@@ -179,33 +181,81 @@ char shellName(int u){
 }
 
 template< typename T >
-bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const{
+bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName, const char * outputFile) const{
+		ofstream out(outputFile);
 		vector <double> search;
+		vector <double> uniqueIndex;
+		vector <double> coef;
+		unsgd from=0;
+		unsgd to=0;
 		bool alreadyExist=false;
+		bool findFrom=false;
+		bool findTo=false;
+		bool uniq=true;
 	for (typename map< vector< string> , vector < vector < vector < pair < T, T> > > > >::const_iterator it = content.begin(); it != content.end(); it++){ 
 		for ( int i=0; i<int(it->first.size()); i++){
-			if(it->first[i]=="!") cout<<'\n';
-			cout<<' '<<it->first[i];
+			if(it->first[i]=="!") out<<'\n';
+			out<<' '<<it->first[i];
 		}
-		cout<<'\n'; 
+		out<<'\n'; 
 		for (int i=0; i<int(it->second.size()); i++){
-			cout<<shellName(i)<<" , EN , ";
+			uniqueIndex.clear();
+			out<<shellName(i)<<" , EN , ";
 			search.clear();
 			for (int j=0; j<int(it->second[i].size()); j++){
 				alreadyExist=false;
 				for (int l=0; l<int(it->second[i][j].size()); l++){
-					for(unsigned k=0; k<search.size(); k++){
+					for(unsgd k=0; k<search.size(); k++){
 						if(it->second[i][j][l].first==search[k]){
 							alreadyExist=true;
 							break;
 						}
 					}
 					if(alreadyExist) continue;			
-					cout<<it->second[i][j][l].first<<" , ";
+					out<<it->second[i][j][l].first<<" , ";
 					search.push_back(it->second[i][j][l].first);
 				}
+
+
 			}
-			cout<<'\n';
+				out<<'\n';
+				for(int j=0; j<int(it->second[i].size()); j++){
+					coef.clear();
+					out<<"c, ";
+					for(int l=0; l<int(it->second[i][j].size()); l++){
+						uniq=true;
+						for(unsgd k=0; k<uniqueIndex.size(); k++){
+							if(it->second[i][j][l].first==uniqueIndex[k])
+							uniq=false;
+						}
+						if(!uniq) continue;
+						uniqueIndex.push_back(it->second[i][j][l].first);
+					}
+					for(int l=0; l<int(it->second[i][j].size()); l++){
+						coef.push_back(it->second[i][j][l].second);
+						for(unsgd t=0; t<uniqueIndex.size(); t++){
+							if(it->second[i][j][0].first==uniqueIndex[t]){ 
+								from=t;
+								findFrom=true;
+							}
+							if(it->second[i][j][int(it->second[i][j].size()-1)].first==uniqueIndex[t]){
+								to=t;
+								findTo=true;
+							}
+						}
+						if(!findFrom || !findTo){
+							cerr<<"\nОшибка! Не найдены коэффициенты"<<endl;
+							return false;
+						}
+				
+					}
+					out<<from+1<<"."<<to+1<<" , ";
+					for(unsgd a=0; a<coef.size(); a++){
+						out<<coef[a]<<" , ";
+					}
+					out<<'\n';
+				}
+			out<<'\n';
 		}
 
 
