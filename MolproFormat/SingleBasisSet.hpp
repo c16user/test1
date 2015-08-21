@@ -188,10 +188,14 @@ bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const
 		vector <double> coef;
 		unsgd from=0;
 		unsgd to=0;
+		string str;
+		regex a("\\s*,\\s*$");
+		regex b("");
 		bool alreadyExist=false;
 		bool findFrom=false;
 		bool findTo=false;
 		bool uniq=true;
+		out<<"basis=\{"<<endl;
 	for (typename map< vector< string> , vector < vector < vector < pair < T, T> > > > >::const_iterator it = content.begin(); it != content.end(); it++){ 
 		for ( int i=0; i<int(it->first.size()); i++){
 			if(it->first[i]=="!") out<<'\n';
@@ -259,6 +263,16 @@ bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const
 		}
 
 
+	}
+	out<<"}"<<endl;
+	out.close();
+	ifstream inp("outputFile");
+	ofstream outGood("goodBasisStrings.basis");
+	while(getline(inp,str)){
+		if(regex_search(str,a)){
+			str=regex_replace(str,a,b);
+		}
+		outGood<<str<<endl;
 	}
 	return true;	
 }
