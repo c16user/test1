@@ -289,21 +289,24 @@ string elementSymbol(string str){
 template< typename T >
 bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const{
 		ofstream out("outputFile");
+		out.precision(7);
+		out.setf(std::ios::fixed, std::ios::floatfield);
 		vector <double> search;
 		vector <double> uniqueIndex;
 		vector <double> coef;
 		unsgd from=0;
 		unsgd to=0;
-		string str;
+		string str, str1;
 		string catchName="";
 		regex a("\\s*,\\s*$");
 		regex b("");
+		regex q("^\\s*");
 		regex elName("[a-zA-Z]{4,}");
 		bool alreadyExist=false;
 		bool findFrom=false;
 		bool findTo=false;
 		bool uniq=true;
-		out<<"basis=\{"<<endl;
+		out<<"basis=\{";
 	for (typename map< vector< string> , vector < vector < vector < pair < T, T> > > > >::const_iterator it = content.begin(); it != content.end(); it++){ 
 		for ( int i=0; i<int(it->first.size()); i++){
 			if(it->first[i]=="!") out<<'\n';
@@ -314,7 +317,7 @@ bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const
 		out<<'\n'; 
 		for (int i=0; i<int(it->second.size()); i++){
 			uniqueIndex.clear();
-			out<<shellName(i)<<" , "<<catchName<<" , ";
+			out<<shellName(i)<<", "<<catchName<<" , ";
 			search.clear();
 			for (int j=0; j<int(it->second[i].size()); j++){
 				alreadyExist=false;
@@ -326,7 +329,7 @@ bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const
 						}
 					}
 					if(alreadyExist) continue;			
-					out<<it->second[i][j][l].first<<" , ";
+					out<<it->second[i][j][l].first<<", ";
 					search.push_back(it->second[i][j][l].first);
 				}
 
@@ -348,11 +351,11 @@ bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const
 					for(int l=0; l<int(it->second[i][j].size()); l++){
 						coef.push_back(it->second[i][j][l].second);
 						for(unsgd t=0; t<uniqueIndex.size(); t++){
-							if(it->second[i][j][0].first==uniqueIndex[t]){ 
+							if(it->second[i][j][t].first==uniqueIndex[t]){ 
 								from=t;
 								findFrom=true;
 							}
-							if(it->second[i][j][int(it->second[i][j].size()-1)].first==uniqueIndex[t]){
+							if(it->second[i][j][t].first==uniqueIndex[t]){
 								to=t;
 								findTo=true;
 							}
@@ -365,11 +368,10 @@ bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const
 					}
 					out<<from+1<<"."<<to+1<<" , ";
 					for(unsgd a=0; a<coef.size(); a++){
-						out<<coef[a]<<" , ";
+						out<<coef[a]<<", ";
 					}
 					out<<'\n';
 				}
-			out<<'\n';
 		}
 
 
@@ -377,15 +379,31 @@ bool SingleBasisSet<T>::exportBasisSetMolproFormat( const char * fileName) const
 	out<<"}"<<endl;
 	out.close();
 	ifstream inp("outputFile");
-	ofstream outGood(fileName);
+	ofstream outGood("basis");
 	while(getline(inp,str)){
 		if(regex_search(str,a)){
 			str=regex_replace(str,a,b);
 		}
+		//if(regex_search(str,q)){
+		//	str=regex_replace(str,q,b); //не получается почему то сразу в одном все сделать
+		//}
 		outGood<<str<<endl;
 	}
+	inp.close();
+	outGood.close();
+	ifstream inp1("basis");
+	ofstream Final(fileName);
+	while(getline(inp1,str1)){
+		if(regex_search(str1,q))
+			str1=regex_replace(str1,q,b);
+		Final<<str1<<endl;
+	}
 	if(remove("outputFile")!=0)
-		cerr<<"Файл \"outputFile\" не удален!"<< endl;
+		cerr<<"Внимание! Файл \"outputFile\" не удален!"<< endl;
+	if(remove("basis")!=0)
+		cerr<<"Внимание! Файл \"basis\" не удален!"<<endl;
+
+	system("/home/chesnykh/Documents/work/progs/test1/MolproFormat/BasisScript.sh");
 	return true;	
 }
 
